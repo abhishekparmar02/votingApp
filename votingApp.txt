@@ -1,0 +1,68 @@
+1). Deleting the voting pod
+
+kubectl get po -o wide
+
+NAME                      READY   STATUS    RESTARTS   AGE   IP               NODE                                              NOMINATED NODE   READINESS GATES
+db-b54cd94f4-k2rq5        1/1     Running   0          42m   192.168.14.118   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+redis-868d64d78-vgqgd     1/1     Running   0          42m   192.168.14.119   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+result-5d57b59f4b-jcj8x   1/1     Running   0          42m   192.168.14.120   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+vote-94849dc97-hh4l7      1/1     Running   0          42m   192.168.14.121   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+worker-dd46d7584-p9cr9    1/1     Running   0          42m   192.168.14.122   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+
+
+kubectl delete po vote-94849dc97-hh4l7
+pod "vote-94849dc97-hh4l7" deleted
+
+kubectl get po -o wide
+NAME                      READY   STATUS    RESTARTS   AGE   IP               NODE                                              NOMINATED NODE   READINESS GATES
+db-b54cd94f4-k2rq5        1/1     Running   0          50m   192.168.14.118   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+redis-868d64d78-vgqgd     1/1     Running   0          50m   192.168.14.119   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+result-5d57b59f4b-jcj8x   1/1     Running   0          50m   192.168.14.120   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+vote-94849dc97-vlzxf      1/1     Running   0          6s    192.168.14.123   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+worker-dd46d7584-p9cr9    1/1     Running   0          50m   192.168.14.122   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+
+===============================================================================================================================
+Obersvations:
+new voting pod with different name/id gets respawned. This new name/id of voting pod is reflected in the ui as well.
+No impact on the voting app ui data is seen. The number of votes data is retained.
+===============================================================================================================================
+
+2). Deleting the worker pod
+
+kubectl delete po worker-dd46d7584-p9cr9
+pod "worker-dd46d7584-p9cr9" deleted
+
+kubectl get po -o wide
+NAME                      READY   STATUS    RESTARTS   AGE     IP               NODE                                              NOMINATED NODE   READINESS GATES
+db-b54cd94f4-k2rq5        1/1     Running   0          53m     192.168.14.118   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+redis-868d64d78-vgqgd     1/1     Running   0          53m     192.168.14.119   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+result-5d57b59f4b-jcj8x   1/1     Running   0          53m     192.168.14.120   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+vote-94849dc97-vlzxf      1/1     Running   0          2m34s   192.168.14.123   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+worker-dd46d7584-7cjkv    1/1     Running   0          7s      192.168.14.124   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+
+===============================================================================================================================
+Obersvations:
+new worker pod with different name/id gets respawned.
+No impact on the voting app ui data is seen. The number of votes data is still retained.
+===============================================================================================================================
+
+3). Deleting the db pod
+
+kubectl delete po db-b54cd94f4-k2rq5
+pod "db-b54cd94f4-k2rq5" deleted
+
+kubectl get po -o wide
+NAME                      READY   STATUS    RESTARTS   AGE     IP               NODE                                              NOMINATED NODE   READINESS GATES
+db-b54cd94f4-cf822        1/1     Running   0          80s     192.168.14.125   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+redis-868d64d78-vgqgd     1/1     Running   0          55m     192.168.14.119   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+result-5d57b59f4b-jcj8x   1/1     Running   1          55m     192.168.14.120   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+vote-94849dc97-vlzxf      1/1     Running   0          5m1s    192.168.14.123   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+worker-dd46d7584-7cjkv    1/1     Running   1          2m34s   192.168.14.124   ip-172-31-47-72.ap-southeast-1.compute.internal   <none>           <none>
+
+===============================================================================================================================
+Obersvations:
+new db pod with different name/id gets respawned.
+This time the voting data in the ui is impacted. It is reset to default 50-50% and the old data is lost.
+Also it can be observed that the worker and result pods also restart when the db pod is restarted. This is because as soon as
+the db pod is deleted the socket connection breaks and the result and worker pods try to restart themselves until they can restablish this connection.
+===============================================================================================================================
